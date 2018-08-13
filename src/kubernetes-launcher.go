@@ -18,8 +18,8 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func ListOnConfigmap(dest string, namespace string, configmap string, command []string) {
-	fmt.Printf("Monitoring changes in %s/%s", namespace, configmap)
+func ListOnConfigmap(dest string, namespace string, fieldselector string, command []string) {
+	fmt.Printf("Monitoring changes in %s/%s", namespace, fieldselector)
 	var config *rest.Config
 	var err error
 	if os.Getenv("KUBERNETES_CONFIG") != "" {
@@ -44,7 +44,7 @@ func ListOnConfigmap(dest string, namespace string, configmap string, command []
 
 	started := false
 	for {
-		watch, err := clientset.CoreV1().ConfigMaps(namespace).Watch(meta_v1.ListOptions{Watch: true, FieldSelector: "metadata.name=" + configmap})
+		watch, err := clientset.CoreV1().ConfigMaps(namespace).Watch(meta_v1.ListOptions{Watch: true, FieldSelector: fieldselector})
 		if err != nil {
 			panic(err)
 		}
@@ -58,11 +58,13 @@ func ListOnConfigmap(dest string, namespace string, configmap string, command []
 				for key, value := range cm.Data {
 					saveFile(dest, key, []byte(value))
 				}
-				if !started {
-					go startProcess(command, supervisor)
-					started = true
-				} else {
-					supervisor <- true
+				if len(command) > 0 {
+					if !started {
+						go startProcess(command, supervisor)
+						started = true
+					} else {
+						supervisor <- true
+					}
 				}
 			} else if event.Type == "DELETED" {
 			} else if event.Type == "" {
@@ -86,7 +88,7 @@ func kerub(supervisor chan bool, process *os.Process) {
 	}
 
 }
-func startProcess(command[] string, supervisor chan bool) {
+func startProcess(command [] string, supervisor chan bool) {
 	retry := true
 	for retry {
 		var cmd *exec.Cmd

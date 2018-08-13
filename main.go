@@ -11,7 +11,7 @@ func main() {
 	var configmap string
 	flag.StringVar(&destination, "destination", "/tmp", "Destination path")
 	flag.StringVar(&namespace, "namespace", "default", "Namespace name")
-	flag.StringVar(&configmap, "configmap", "config", "Configmap name")
+	flag.StringVar(&configmap, "selector", "config", "Field selector for the config map")
 	flag.Parse()
 	kuberneteslauncher.ListOnConfigmap(destination, namespace, configmap, flag.Args())
 
