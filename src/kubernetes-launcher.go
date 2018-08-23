@@ -42,6 +42,8 @@ func ListOnConfigmap(dest string, namespace string, fieldSelector string, labelS
 
 	supervisor := make(chan bool)
 
+	lastResourceVersions := make(map[string]string)
+
 	started := false
 	for {
 		watch, err := clientset.CoreV1().ConfigMaps(namespace).Watch(meta_v1.ListOptions{Watch: true,
@@ -54,23 +56,30 @@ func ListOnConfigmap(dest string, namespace string, fieldSelector string, labelS
 		for {
 			event, ok := <-events
 			if !ok {
-				log.Println(ok)
+				log.Println("Event loop is restarting.")
 				break
 			}
 			log.Printf("Service Event %v: %+v", event.Type, event.Object.GetObjectKind())
 			if event.Type == "MODIFIED" || event.Type == "ADDED" {
-				log.Println("Configmap is added/modified")
 				cm := event.Object.(*v1.ConfigMap)
-				for key, value := range cm.Data {
-					saveFile(dest, key, []byte(value))
-				}
-				if len(command) > 0 {
-					if !started {
-						go startProcess(command, supervisor)
-						started = true
-					} else {
-						supervisor <- true
+
+				id := cm.ObjectMeta.Namespace + "." + cm.ObjectMeta.Name
+
+				currentResourceVersion := cm.ResourceVersion
+				if lastResourceVersion, ok := lastResourceVersions[id]; !ok || lastResourceVersion != currentResourceVersion {
+					log.Printf("Configmap is added/modified %s (%s)", id, currentResourceVersion)
+					for key, value := range cm.Data {
+						saveFile(dest, key, []byte(value))
 					}
+					if len(command) > 0 {
+						if !started {
+							go startProcess(command, supervisor)
+							started = true
+						} else {
+							supervisor <- true
+						}
+					}
+					lastResourceVersions[id] = currentResourceVersion
 				}
 			} else if event.Type == "DELETED" {
 			} else if event.Type == "" {
