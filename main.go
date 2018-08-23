@@ -6,14 +6,13 @@ import (
 )
 
 func main() {
-	var destination string
-	var namespace string
-	var configmap string
+	var destination, namespace, fieldSelector, labelSelector string
 	flag.StringVar(&destination, "destination", "/tmp", "Destination path")
 	flag.StringVar(&namespace, "namespace", "default", "Namespace name")
-	flag.StringVar(&configmap, "selector", "config", "Field selector for the config map")
+	flag.StringVar(&fieldSelector, "fields", "", "Field selector for the configmap(s)")
+	flag.StringVar(&labelSelector, "labels", "", "Label selector for the configmap(s)")
 	flag.Parse()
-	kuberneteslauncher.ListOnConfigmap(destination, namespace, configmap, flag.Args())
+	kuberneteslauncher.ListOnConfigmap(destination, namespace, fieldSelector, labelSelector, flag.Args())
 
 
 }

@@ -18,8 +18,8 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func ListOnConfigmap(dest string, namespace string, fieldselector string, command []string) {
-	fmt.Printf("Monitoring changes in %s/%s", namespace, fieldselector)
+func ListOnConfigmap(dest string, namespace string, fieldSelector string, labelSelector string, command []string) {
+	log.Printf("Monitoring changes in namespace %s fields: %s labels: %s", namespace, fieldSelector, labelSelector)
 	var config *rest.Config
 	var err error
 	if os.Getenv("KUBERNETES_CONFIG") != "" {
@@ -44,16 +44,22 @@ func ListOnConfigmap(dest string, namespace string, fieldselector string, comman
 
 	started := false
 	for {
-		watch, err := clientset.CoreV1().ConfigMaps(namespace).Watch(meta_v1.ListOptions{Watch: true, FieldSelector: fieldselector})
+		watch, err := clientset.CoreV1().ConfigMaps(namespace).Watch(meta_v1.ListOptions{Watch: true,
+			FieldSelector: fieldSelector,
+			LabelSelector: labelSelector})
 		if err != nil {
 			panic(err)
 		}
 		events := watch.ResultChan()
 		for {
 			event, ok := <-events
+			if !ok {
+				log.Println(ok)
+				break
+			}
 			log.Printf("Service Event %v: %+v", event.Type, event.Object.GetObjectKind())
 			if event.Type == "MODIFIED" || event.Type == "ADDED" {
-				println("Configmap is added/modified")
+				log.Println("Configmap is added/modified")
 				cm := event.Object.(*v1.ConfigMap)
 				for key, value := range cm.Data {
 					saveFile(dest, key, []byte(value))
