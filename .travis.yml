@@ -10,8 +10,7 @@ before_install:
 install:
   - dep ensure
 
-script:
-  - gox -osarch="linux/amd64" -output "dist/{{.OS}}_{{.Arch}}_{{.Dir}}"
+  - gox -ldflags "-X main.version=$(git describe --long --tag --dirty)" -osarch="linux/amd64" -output "dist/{{.OS}}_{{.Arch}}_{{.Dir}}"
 deploy:
   provider: releases
   api_key: $GITHUB_AUTH_TOKEN
