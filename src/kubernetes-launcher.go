@@ -78,9 +78,7 @@ func ListOnConfigmap(dest string, namespace string, fieldSelector string, labelS
 			} else {
 				log.Printf("Service watch unhandled event: %v", event.Type)
 			}
-			if !ok {
-				break
-			}
+
 		}
 
 	}
@@ -88,7 +86,7 @@ func ListOnConfigmap(dest string, namespace string, fieldSelector string, labelS
 
 func kerub(supervisor chan bool, process *os.Process) {
 	signal := <-supervisor
-	if (signal) {
+	if signal {
 		fmt.Println("Killing process " + strconv.Itoa(process.Pid) + " ")
 		process.Kill()
 	}
